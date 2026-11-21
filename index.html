@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-n6H23c4xi1u1Z3SC9gCt2c2S7usF4bj6A/umVM7Upp8='; style-src 'unsafe-inline'; img-src https://tr.rbxcdn.com; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Trend Radar</title>
+<style>
+  :root {
+    --bg: #0c0f15;
+    --panel: #141922;
+    --panel-2: #1a202b;
+    --line: #252d3a;
+    --ink: #e7eaf0;
+    --ink-2: #aab2c0;
+    --muted: #7b8496;
+    --accent: #5b9bff;
+    --accent-soft: rgba(91, 155, 255, .14);
+    --up: #3fcf8e;
+    --down: #f06368;
+    --warn: #f2b84b;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 14px/1.45 Inter, "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  button, input, select { font: inherit; color: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  header { display: flex; align-items: center; gap: 24px; padding: 14px 24px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: rgba(12, 15, 21, .92); backdrop-filter: blur(8px); z-index: 20; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
+  .brand svg { color: var(--accent); }
+  nav { display: flex; gap: 4px; background: var(--panel); padding: 4px; border-radius: 9px; border: 1px solid var(--line); }
+  nav button { background: none; border: 0; padding: 6px 14px; border-radius: 6px; cursor: pointer; color: var(--ink-2); font-weight: 500; }
+  nav button.on { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .status { margin-left: auto; color: var(--muted); font-size: 12.5px; text-align: right; }
+  .status b { color: var(--ink-2); font-weight: 500; }
+
+  main { padding: 20px 24px 60px; max-width: 1480px; margin: 0 auto; }
+  .banner { background: rgba(242, 184, 75, .08); border: 1px solid rgba(242, 184, 75, .3); color: #f5d79b; padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+  .banner b { color: var(--warn); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 14px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  input[type=search], select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; outline: none; min-width: 120px; }
+  input[type=search] { min-width: 240px; }
+  input:focus, select:focus { border-color: var(--accent); }
+  .seg { display: flex; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+  .seg button { background: none; border: 0; padding: 5px 11px; border-radius: 6px; cursor: pointer; color: var(--ink-2); }
+  .seg button.on { background: var(--accent-soft); color: var(--ink); }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+  .count { color: var(--muted); font-size: 12.5px; margin-left: auto; align-self: center; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11.5px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--panel); }
+  th.r, td.r { text-align: right; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--panel-2); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .rank { color: var(--muted); width: 36px; }
+  .game { display: flex; align-items: center; gap: 11px; min-width: 260px; }
+  .game img, .noimg { width: 42px; height: 42px; border-radius: 9px; background: var(--panel-2); flex: none; object-fit: cover; }
+  .gname { font-weight: 600; max-width: 330px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gsub { color: var(--muted); font-size: 12px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+  .chip { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+  .chip.hot { background: var(--accent-soft); border-color: rgba(91, 155, 255, .35); color: #cfe0ff; }
+  .genre { color: var(--ink-2); }
+  .genre small { display: block; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  .flat { color: var(--muted); }
+  .ccu { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  .spark { display: block; }
+  .play { display: inline-flex; align-items: center; gap: 6px; background: var(--up); color: #062417; font-weight: 700; border-radius: 7px; padding: 6px 12px; text-decoration: none; font-size: 13px; white-space: nowrap; }
+  .play:hover { filter: brightness(1.1); }
+  .more { display: block; margin: 14px auto 0; background: var(--panel); border: 1px solid var(--line); padding: 8px 18px; border-radius: 8px; cursor: pointer; color: var(--ink-2); }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+
+  /* Themes */
+  .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .theme { padding: 14px; cursor: pointer; transition: border-color .15s; position: relative; }
+  .theme:hover { border-color: #3a4558; }
+  .theme.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .theme h3 { margin: 0 0 2px; font-size: 15px; text-transform: capitalize; }
+  .theme .big { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .theme .row { display: flex; justify-content: space-between; align-items: end; gap: 8px; margin-top: 8px; }
+  .theme .tag { position: absolute; top: 12px; right: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0; }
+  .tile { padding: 12px 14px; }
+  .tile .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .tile .v { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-top: 2px; }
+  .tile .s { font-size: 12px; color: var(--muted); }
+  .detail-head { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+  .detail-head h2 { margin: 0; font-size: 22px; text-transform: capitalize; }
+  .charts { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; margin-bottom: 14px; }
+  .chart-card { padding: 14px; min-width: 0; }
+  .chart-card h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0 14px; }
+  .hint code { background: var(--panel-2); padding: 1px 6px; border-radius: 5px; color: var(--ink-2); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 10px; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Chart */
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; overflow: visible; }
+  .chart .tip { position: absolute; pointer-events: none; background: #0b0e14; border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -110%); display: none; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  .axis { fill: var(--muted); font-size: 10.5px; }
+  .grid { stroke: var(--line); stroke-width: 1; }
+
+  /* Drawer */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; display: none; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); background: var(--bg); border-left: 1px solid var(--line); z-index: 41; transform: translateX(100%); transition: transform .2s ease; overflow-y: auto; padding: 22px; }
+  .drawer.open { transform: none; }
+  .scrim.open { display: block; }
+  .drawer .close { position: absolute; top: 14px; right: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; color: var(--ink-2); font-size: 18px; line-height: 1; }
+  .dh { display: flex; gap: 14px; align-items: center; padding-right: 40px; }
+  .dh img, .dh .noimg { width: 72px; height: 72px; border-radius: 14px; }
+  .dh h2 { margin: 0; font-size: 19px; line-height: 1.25; }
+  .actions { display: flex; gap: 10px; margin: 16px 0; }
+  .ghost { display: inline-flex; align-items: center; background: var(--panel); border: 1px solid var(--line); color: var(--ink-2); border-radius: 7px; padding: 6px 12px; text-decoration: none; font-size: 13px; }
+  dl.facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 0; font-size: 13px; }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; }
+
+  /* Password screen */
+  body.locked > header, body.locked > main { display: none; }
+  #gate { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  #gate[hidden] { display: none; }
+  #gateForm { width: min(360px, 100%); padding: 28px; display: flex; flex-direction: column; gap: 12px; text-align: center; align-items: stretch; }
+  #gateForm svg { color: var(--accent); align-self: center; }
+  #gateForm h1 { margin: 0; font-size: 20px; }
+  #gateForm p { margin: 0 0 4px; color: var(--muted); font-size: 13px; }
+  #gateForm input[type=password] { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; outline: none; font-size: 15px; }
+  #gateForm input[type=password]:focus { border-color: var(--accent); }
+  #gateForm .remember { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--ink-2); font-size: 13px; }
+  #gateForm button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer; }
+  #gateForm button:disabled { opacity: .6; cursor: wait; }
+  #gateErr { color: var(--down); font-size: 13px; min-height: 18px; }
+
+  @media (max-width: 900px) {
+    header { padding: 12px 16px; gap: 12px; }
+    .status { margin-left: 0; text-align: left; width: 100%; }
+    main { padding: 16px; }
+    .charts { grid-template-columns: 1fr; }
+    input[type=search] { min-width: 0; width: 100%; }
+    .field.grow { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body class="locked">
+<div id="gate" hidden>
+  <form id="gateForm" class="card">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <h1>Trend Radar</h1>
+    <p>This dashboard is private. Enter the password to open it.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
+    <label class="remember"><input id="remember" type="checkbox" checked> Remember on this device</label>
+    <button type="submit">Unlock</button>
+    <div id="gateErr" role="alert"></div>
+  </form>
+</div>
+<header>
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+    Trend Radar
+  </div>
+  <nav id="tabs">
+    <button data-tab="games">Rising games</button>
+    <button data-tab="themes">Themes</button>
+    <button data-tab="genres">Genres</button>
+  </nav>
+  <div class="status" id="status"></div>
+</header>
+
+<main>
+  <div id="banner"></div>
+
+  <section id="tab-games" hidden>
+    <div class="filters">
+      <div class="field grow"><label for="q">Search</label><input id="q" type="search" placeholder="Game, creator or word…"></div>
+      <div class="field"><label>Growth over</label><div class="seg" data-window></div></div>
+      <div class="field"><label for="age">Released</label>
+        <select id="age"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option><option value="0">Any time</option></select></div>
+      <div class="field"><label for="genre">Genre</label><select id="genre"><option value="">All genres</option></select></div>
+      <div class="field"><label for="minccu">Min players</label>
+        <select id="minccu"><option value="0">Any</option><option value="25">25+</option><option value="100" selected>100+</option><option value="500">500+</option><option value="1000">1,000+</option><option value="10000">10,000+</option></select></div>
+      <div class="field"><label for="sort">Sort by</label>
+        <select id="sort"><option value="pct">Growth %</option><option value="gain">Players gained</option><option value="ccu">Players now</option><option value="vpd">Visits per day</option><option value="new">Newest</option></select></div>
+      <div class="count" id="gcount"></div>
+    </div>
+    <div class="card tablewrap"><table id="gtable"></table></div>
+    <button class="more" id="gmore" hidden>Show more</button>
+  </section>
+
+  <section id="tab-themes" hidden>
+    <div class="filters">
+      <div class="field grow"><label for="tq">Search a theme</label><input id="tq" type="search" placeholder="e.g. ragdoll, brainrot, tsunami…"></div>
+      <div class="field"><label>Growth over</label><div class="seg" data-window></div></div>
+      <div class="field"><label for="tsort">Rank themes by</label>
+        <select id="tsort"><option value="new30">New games this month</option><option value="new7">New games this week</option><option value="pct">Player growth %</option><option value="newccu">Players in new games</option><option value="ccu">Total players</option></select></div>
+    </div>
+    <p class="hint">A theme is any word or phrase in game names. Themes in <code>themes.txt</code> are also searched on Roblox every hour, so coverage is best for those. The collector also adds the most common words in new game names by itself.</p>
+    <div class="themes" id="themeGrid"></div>
+    <div id="themeDetail"></div>
+  </section>
+
+  <section id="tab-genres" hidden>
+    <div class="filters">
+      <div class="field"><label>Level</label><div class="seg" id="glevel"><button data-v="g1" class="on">Genre</button><button data-v="g2">Subgenre</button></div></div>
+      <div class="field"><label>Growth over</label><div class="seg" data-window></div></div>
+    </div>
+    <p class="hint">Roblox's own genre labels. Click a row to see its games.</p>
+    <div class="card tablewrap"><table id="genreTable"></table></div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Game details"></aside>
+
+<script>
+function startApp(D) {
+
+  // ---------- helpers ----------
+  const $ = s => document.querySelector(s);
+  const H = D.hours;
+  const LATEST = new Date(D.latest);
+  const DAY = 86400000;
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = n => n == null ? "—" : n >= 1e9 ? (n / 1e9).toFixed(1) + "B" : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e4 ? (n / 1e3).toFixed(0) + "K" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(Math.round(n));
+  const full = n => n == null ? "—" : Math.round(n).toLocaleString("en-US");
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("tt:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("tt:" + k, JSON.stringify(v)); } catch {} },
+  };
+  const STOP = new Set("the and for with you your are not but all new free update upd beta alpha release released game games roblox event sale off more best super mega ultra hyper very real realistic official version part ver from into out get got can one two three".split(" "));
+  const SORT_NAMES = { "top-trending": "Trending", "up-and-coming": "Up-and-Coming", "top-playing-now": "Top Playing", "top-revisited": "Revisited", "top-earning": "Top Earning", "top-rated": "Top Rated", "most-popular": "Most Popular", "fun-with-friends": "With Friends" };
+  const placeId = g => Number.isSafeInteger(g.p) ? g.p : "";
+  const playUrl = g => `roblox://experiences/start?placeId=${placeId(g)}`;
+  const pageUrl = g => `https://www.roblox.com/games/${placeId(g)}`;
+
+  // How many hours of history exist inside the chart window.
+  const HIST = H - D.firstIdx;
+  const WINDOWS = [{ h: 1, label: "1h" }, { h: 6, label: "6h" }, { h: 24, label: "24h" }, { h: 168, label: "7d" }];
+  const usable = w => w <= HIST;
+  let win = store.get("win", 24);
+  if (!usable(win)) win = [...WINDOWS].reverse().find(w => usable(w.h))?.h ?? 1;
+
+  // ---------- prepare games ----------
+  const at = (arr, i) => {
+    for (const d of [0, -1, 1, -2, 2]) { const j = i + d; if (j >= 0 && j <= H && arr[j] != null) return arr[j]; }
+    return null;
+  };
+  for (const g of D.games) {
+    const a = new Array(H + 1).fill(null);
+    g.s.forEach((v, i) => a[g.o + i] = v);
+    g.a = a;
+    // forward-filled copy for summing across games (bridges gaps up to 3h)
+    const f = a.slice(); let lastV = null, gap = 0;
+    for (let i = 0; i <= H; i++) {
+      if (f[i] != null) { lastV = f[i]; gap = 0; } else if (lastV != null && ++gap <= 3) f[i] = lastV;
+    }
+    g.f = f;
+    g.now = at(a, H);
+    g.age = g.cr ? Math.floor((LATEST - new Date(g.cr + "T00:00:00Z")) / DAY) : null;
+    g.lname = (g.n || "").toLowerCase();
+    g.words = new Set((g.lname.replace(/\[[^\]]*\]|\([^)]*\)/g, " ").match(/[a-z]{3,}/g) || []).filter(w => !STOP.has(w)));
+    g.bestRank = Object.entries(g.r).sort((x, y) => x[1] - y[1])[0];
+  }
+  const growth = (g, w) => {
+    if (!usable(w)) return null;
+    const then = at(g.a, H - w);
+    if (g.now == null || then == null) return null;
+    return { then, gain: g.now - then, pct: then > 0 ? (g.now - then) / then : (g.now > 0 ? Infinity : 0) };
+  };
+
+  // ---------- small renderers ----------
+  const pctHtml = (gr, cls = "") => {
+    if (!gr) return `<span class="flat ${cls}">—</span>`;
+    if (gr.pct === Infinity) return `<span class="up ${cls}">new</span>`;
+    const p = gr.pct * 100;
+    const c = p > 0.5 ? "up" : p < -0.5 ? "down" : "flat";
+    const s = Math.abs(p) >= 1000 ? fmt(Math.abs(p)) : Math.abs(p) >= 100 ? Math.abs(p).toFixed(0) : Math.abs(p).toFixed(1);
+    return `<span class="${c} num ${cls}">${p > 0.5 ? "▲" : p < -0.5 ? "▼" : ""} ${s}%</span>`;
+  };
+  const gainHtml = gr => !gr ? "" : `<div class="muted num" style="font-size:12px">${gr.gain >= 0 ? "+" : "−"}${fmt(Math.abs(gr.gain))} players</div>`;
+  const ago = days => days == null ? "—" : days <= 0 ? "today" : days === 1 ? "1 day ago" : days < 60 ? `${days} days ago` : days < 730 ? `${Math.round(days / 30)} mo ago` : `${Math.round(days / 365)} yr ago`;
+  const shortDate = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.slice(0, 4) === String(LATEST.getUTCFullYear()) ? undefined : "numeric", timeZone: "UTC" });
+  const icon = (g, cls = "") => g.ic ? `<img class="${cls}" src="${esc(g.ic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<div class="noimg ${cls}"></div>`;
+
+  function spark(arr, w = 96, h = 28) {
+    const pts = [];
+    let max = 0, min = Infinity;
+    arr.forEach(v => { if (v != null) { max = Math.max(max, v); min = Math.min(min, v); } });
+    if (!isFinite(min)) return `<svg class="spark" width="${w}" height="${h}"></svg>`;
+    if (max === min) { max += 1; min = Math.max(0, min - 1); }
+    const n = arr.length - 1;
+    let d = "", pen = false;
+    arr.forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      const x = (i / n) * (w - 2) + 1, y = h - 2 - ((v - min) / (max - min)) * (h - 4);
+      d += (pen ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+      pen = true;
+    });
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  }
+
+  // Line chart with hover crosshair. series: array of numbers/null indexed by hour slot.
+  function lineChart(el, series, { height = 220, label = "players" } = {}) {
+    const W = Math.max(el.clientWidth || 560, 280), Hh = height, padL = 46, padR = 10, padT = 10, padB = 24;
+    const vals = series.filter(v => v != null);
+    if (!vals.length) { el.innerHTML = '<div class="empty">No data in this window yet.</div>'; return; }
+    let max = Math.max(...vals), min = 0;
+    const nice = (() => { const e = Math.pow(10, Math.floor(Math.log10(max || 1))); return Math.ceil((max || 1) / e) * e; })();
+    max = nice;
+    const n = series.length - 1;
+    const X = i => padL + (i / n) * (W - padL - padR);
+    const Y = v => padT + (1 - (v - min) / (max - min)) * (Hh - padT - padB);
+    let d = "", area = "", pen = false, segStart = null, lastX = 0;
+    series.forEach((v, i) => {
+      if (v == null) {
+        if (pen) { area += `L${lastX.toFixed(1)} ${Y(0)}L${segStart.toFixed(1)} ${Y(0)}Z`; }
+        pen = false; return;
+      }
+      const x = X(i), y = Y(v);
+      if (!pen) { segStart = x; area += `M${x.toFixed(1)} ${Y(0)}L${x.toFixed(1)} ${y.toFixed(1)}`; } else area += `L${x.toFixed(1)} ${y.toFixed(1)}`;
+      d += (pen ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+      pen = true; lastX = x;
+    });
+    if (pen) area += `L${lastX.toFixed(1)} ${Y(0)}L${segStart.toFixed(1)} ${Y(0)}Z`;
+    let grid = "";
+    for (let k = 0; k <= 4; k++) {
+      const v = (max / 4) * k, y = Y(v);
+      grid += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"/><text class="axis" x="${padL - 6}" y="${y + 3.5}" text-anchor="end">${fmt(v)}</text>`;
+    }
+    const start = new Date(D.start).getTime();
+    for (let k = 0; k <= n; k += 24) {
+      const t = new Date(start + k * 3600000);
+      grid += `<text class="axis" x="${X(k)}" y="${Hh - 6}" text-anchor="middle">${t.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>`;
+    }
+    el.classList.add("chart");
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" height="${Hh}">
+        <defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+        ${grid}<path d="${area}" fill="url(#fade)"/><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <line class="xh" y1="${padT}" y2="${Hh - padB}" stroke="var(--ink-2)" stroke-dasharray="3 3" visibility="hidden"/>
+        <circle class="dot" r="4.5" fill="var(--accent)" stroke="var(--bg)" stroke-width="2" visibility="hidden"/>
+        <rect x="${padL}" y="0" width="${W - padL - padR}" height="${Hh}" fill="transparent"/></svg><div class="tip"></div>`;
+    const svg = el.querySelector("svg"), tip = el.querySelector(".tip"), xh = el.querySelector(".xh"), dot = el.querySelector(".dot");
+    svg.addEventListener("mousemove", e => {
+      const r = svg.getBoundingClientRect();
+      const px = (e.clientX - r.left) * (W / r.width);
+      let i = Math.round(((px - padL) / (W - padL - padR)) * n);
+      i = Math.max(0, Math.min(n, i));
+      let j = i; for (let d = 0; d < 6 && series[j] == null; d++) j = series[i - d] != null ? i - d : series[i + d] != null ? i + d : j;
+      if (series[j] == null) return;
+      const x = X(j), y = Y(series[j]);
+      xh.setAttribute("x1", x); xh.setAttribute("x2", x); xh.setAttribute("visibility", "visible");
+      dot.setAttribute("cx", x); dot.setAttribute("cy", y); dot.setAttribute("visibility", "visible");
+      const t = new Date(start + j * 3600000);
+      tip.innerHTML = `<b class="num">${full(series[j])}</b> ${label}<div class="muted">${t.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric" })}</div>`;
+      tip.style.display = "block"; tip.style.left = (x / W) * r.width + "px"; tip.style.top = (y / Hh) * r.height + "px";
+    });
+    svg.addEventListener("mouseleave", () => { tip.style.display = "none"; xh.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); });
+  }
+
+  // Bars: games released per day over the last 30 days.
+  function releaseBars(el, games) {
+    const days = 30, counts = new Array(days).fill(0);
+    games.forEach(g => { if (g.age != null && g.age < days) counts[days - 1 - g.age]++; });
+    const W = Math.max(el.clientWidth || 360, 240), Hh = 220, padL = 28, padB = 24, padT = 10;
+    const max = Math.max(1, ...counts);
+    const bw = (W - padL) / days;
+    let bars = "";
+    counts.forEach((c, i) => {
+      const h = (c / max) * (Hh - padT - padB);
+      const date = new Date(LATEST.getTime() - (days - 1 - i) * DAY).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (c) bars += `<rect x="${(padL + i * bw + 1).toFixed(1)}" y="${(Hh - padB - h).toFixed(1)}" width="${Math.max(2, bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--accent)"><title>${date}: ${c} game${c > 1 ? "s" : ""} released</title></rect>`;
+    });
+    let axis = `<line class="grid" x1="${padL}" x2="${W}" y1="${Hh - padB}" y2="${Hh - padB}"/>`;
+    axis += `<text class="axis" x="${padL - 6}" y="${padT + 8}" text-anchor="end">${max}</text>`;
+    [0, 14, 29].forEach(i => {
+      const date = new Date(LATEST.getTime() - (days - 1 - i) * DAY).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      axis += `<text class="axis" x="${padL + i * bw + bw / 2}" y="${Hh - 6}" text-anchor="${i === 0 ? "start" : i === 29 ? "end" : "middle"}">${i === 29 ? "Today" : date}</text>`;
+    });
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" width="100%" height="${Hh}">${axis}${bars}</svg>`;
+  }
+
+  // ---------- header + banner ----------
+  const mins = Math.round((Date.now() - LATEST) / 60000);
+  $("#status").innerHTML = `Collecting since <b>${new Date(D.since + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</b> · last update <b>${mins < 60 ? mins + " min" : Math.round(mins / 60) + " h"} ago</b> · ${D.games.length.toLocaleString()} games`;
+  if (HIST < 24) {
+    $("#banner").innerHTML = `<div class="banner"><b>Still building history.</b> ${HIST < 1 ? "There's only one snapshot so far, so growth can't be calculated yet." : `There's ${HIST}h of data so far.`} 24h growth appears after a day of collecting, 7d after a week. Until then, sort by players or newest.</div>`;
+  } else if (mins > 180) {
+    $("#banner").innerHTML = `<div class="banner"><b>Data is ${Math.round(mins / 60)} hours old.</b> Check the Actions tab on GitHub to see if the collector is still running.</div>`;
+  }
+
+  // window toggles (shared across tabs)
+  function renderWindows() {
+    document.querySelectorAll("[data-window]").forEach(seg => {
+      seg.innerHTML = WINDOWS.map(w => `<button data-h="${w.h}" class="${w.h === win ? "on" : ""}" ${usable(w.h) ? "" : `disabled title="Needs ${w.label} of history"`}>${w.label}</button>`).join("");
+    });
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-window] button");
+    if (!b || b.disabled) return;
+    win = +b.dataset.h; store.set("win", win); renderWindows(); renderAll();
+  });
+
+  // ---------- Rising games ----------
+  const genres = [...new Set(D.games.map(g => g.g1).filter(Boolean))].sort();
+  $("#genre").innerHTML += genres.map(x => `<option>${esc(x)}</option>`).join("");
+  let gLimit = 100;
+
+  function gameRows(list, startRank = 1) {
+    return list.map((g, i) => {
+      const gr = growth(g, win);
+      const ranks = Object.entries(g.r).sort((a, b) => a[1] - b[1]).slice(0, 2)
+        .map(([k, v]) => `<span class="chip ${k === "up-and-coming" || k === "top-trending" ? "hot" : ""}">${esc(SORT_NAMES[k] || k)} #${v}</span>`).join("");
+      return `<tr data-id="${g.id}">
+        <td class="rank num">${startRank + i}</td>
+        <td><div class="game">${icon(g)}<div style="min-width:0"><div class="gname" title="${esc(g.n)}">${esc(g.n)}</div>
+          <div class="gsub">${g.c ? `<span>${esc(g.c)}</span>` : ""}${ranks}${g.w ? '<span class="chip">Watchlist</span>' : ""}</div></div></div></td>
+        <td class="genre">${esc(g.g1 || "—")}<small>${esc(g.g2 || "")}</small></td>
+        <td class="num" style="white-space:nowrap">${g.cr ? `${shortDate(g.cr)}<div class="muted" style="font-size:12px">${ago(g.age)}</div>` : '<span class="muted">—</span>'}</td>
+        <td class="r"><div class="ccu"><span>${spark(g.a)}</span><span class="num" style="min-width:52px"><b>${fmt(g.now)}</b></span></div></td>
+        <td class="r">${pctHtml(gr)}${gainHtml(gr)}</td>
+        <td class="r num">${fmt(g.v)}${g.vpd != null ? `<div class="muted" style="font-size:12px">+${fmt(Math.max(0, g.vpd))}/day</div>` : ""}</td>
+        <td class="r"><a class="play" href="${playUrl(g)}" title="Launch in Roblox">▶ Play</a></td>
+      </tr>`;
+    }).join("");
+  }
+  const tableHead = `<thead><tr><th>#</th><th>Game</th><th>Genre</th><th>Released</th><th class="r">Players now · 7d</th><th class="r" id="gh">Growth</th><th class="r">Visits</th><th></th></tr></thead>`;
+
+  function sortGames(list, key) {
+    const val = g => {
+      const gr = growth(g, win);
+      switch (key) {
+        case "pct": return gr ? (gr.pct === Infinity ? 1e9 : gr.pct) : -1e9;
+        case "gain": return gr ? gr.gain : -1e12;
+        case "ccu": return g.now ?? -1;
+        case "vpd": return g.vpd ?? -1;
+        case "new": return g.cr ? -g.age : -1e9;
+      }
+    };
+    return list.map(g => [val(g), g]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
+  }
+
+  function renderGames() {
+    const q = $("#q").value.trim().toLowerCase();
+    const age = +$("#age").value, genre = $("#genre").value, min = +$("#minccu").value, key = $("#sort").value;
+    let list = D.games.filter(g =>
+      (!q || g.lname.includes(q) || (g.c || "").toLowerCase().includes(q)) &&
+      (!age || (g.age != null && g.age <= age)) &&
+      (!genre || g.g1 === genre) &&
+      (g.now ?? 0) >= min);
+    list = sortGames(list, key);
+    $("#gcount").textContent = `${list.length.toLocaleString()} games`;
+    const w = WINDOWS.find(x => x.h === win)?.label;
+    $("#gtable").innerHTML = list.length
+      ? tableHead.replace('id="gh">Growth', `id="gh">Growth · ${w}`) + `<tbody>${gameRows(list.slice(0, gLimit))}</tbody>`
+      : `<tbody><tr><td class="empty">No games match these filters. Try a wider release window or fewer minimum players.</td></tr></tbody>`;
+    $("#gmore").hidden = list.length <= gLimit;
+    store.set("gf", { age, genre, min, key });
+  }
+  const gf = store.get("gf", null);
+  if (gf) { $("#age").value = gf.age; $("#genre").value = gf.genre; $("#minccu").value = gf.min; $("#sort").value = gf.key; }
+  if (!usable(1) && ["pct", "gain"].includes($("#sort").value)) $("#sort").value = "ccu";
+  ["#q", "#age", "#genre", "#minccu", "#sort"].forEach(s => $(s).addEventListener("input", () => { gLimit = 100; renderGames(); }));
+  $("#gmore").addEventListener("click", () => { gLimit += 100; renderGames(); });
+
+  // ---------- Themes ----------
+  const reCache = new Map();
+  function themeGames(theme) {
+    const t = theme.toLowerCase().trim();
+    if (!reCache.has(t)) reCache.set(t, new RegExp("\\b" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"), "i"));
+    const re = reCache.get(t);
+    return D.games.filter(g => re.test(g.lname) || g.th.includes(t));
+  }
+  function themeStats(theme) {
+    const games = themeGames(theme);
+    let now = 0, then = 0, n7 = 0, n30 = 0, newccu = 0;
+    for (const g of games) {
+      const gr = growth(g, win);
+      if (gr) { now += g.now; then += gr.then; }
+      if (g.age != null && g.age <= 7) n7++;
+      if (g.age != null && g.age <= 30) n30++;
+      if (g.age != null && g.age <= 14) newccu += g.now || 0;
+    }
+    const total = games.reduce((s, g) => s + (g.now || 0), 0);
+    const series = new Array(H + 1).fill(null).map((_, i) => { let s = 0, any = false; for (const g of games) if (g.f[i] != null) { s += g.f[i]; any = true; } return any ? s : null; });
+    return { theme, games, total, n7, n30, newccu, pct: then > 0 && usable(win) ? (now - then) / then : null, series };
+  }
+  let candidates = null;
+  function themeCandidates() {
+    if (candidates) return candidates;
+    const counts = new Map();
+    for (const g of D.games) for (const w of g.words) counts.set(w, (counts.get(w) || 0) + 1);
+    const set = new Set([...D.themes.map(t => t.toLowerCase()), ...D.autoThemes]);
+    [...counts.entries()].filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 120).forEach(([w]) => set.add(w));
+    candidates = [...set];
+    return candidates;
+  }
+  let selTheme = store.get("theme", null);
+
+  function renderThemes() {
+    const q = $("#tq").value.trim().toLowerCase();
+    const key = $("#tsort").value;
+    let list = themeCandidates().filter(t => !q || t.includes(q)).map(themeStats).filter(s => s.games.length >= 2);
+    if (q && !list.some(s => s.theme === q)) { const s = themeStats(q); if (s.games.length) list.unshift(s); }
+    const v = s => key === "pct" ? (s.pct ?? -1e9) + (s.total >= 200 ? 0 : -1e6) : key === "newccu" ? s.newccu : key === "ccu" ? s.total : key === "new7" ? s.n7 * 1e4 + s.n30 : s.n30 * 1e4 + s.n7;
+    list.sort((a, b) => v(b) - v(a));
+    if (q) list.sort((a, b) => (b.theme === q) - (a.theme === q));
+    const shown = list.slice(0, 24);
+    if (!selTheme || !shown.some(s => s.theme === selTheme)) selTheme = shown[0]?.theme || null;
+    const tracked = new Set([...D.themes.map(t => t.toLowerCase()), ...D.autoThemes]);
+    $("#themeGrid").innerHTML = shown.length ? shown.map(s => `
+      <div class="card theme ${s.theme === selTheme ? "on" : ""}" data-theme="${esc(s.theme)}">
+        ${tracked.has(s.theme) ? '<span class="chip tag" title="Searched on Roblox every hour">tracked</span>' : ""}
+        <h3>${esc(s.theme)}</h3>
+        <div class="muted" style="font-size:12.5px">${s.games.length} games · ${fmt(s.total)} playing</div>
+        <div class="row">
+          <div style="display:flex;gap:18px"><div><div class="big num">${s.n7}</div><div class="muted" style="font-size:12px">new this week</div></div><div><div class="big num">${s.n30}</div><div class="muted" style="font-size:12px">this month</div></div></div>
+          <div style="text-align:right">${spark(s.series, 90, 30)}<div style="font-size:12.5px">${s.pct == null ? '<span class="flat">—</span>' : pctHtml({ pct: s.pct })}</div></div>
+        </div>
+      </div>`).join("") : `<div class="empty card" style="grid-column:1/-1">No tracked game names contain "${esc(q)}". Add it to <code>themes.txt</code> so the collector searches Roblox for it every hour.</div>`;
+    renderThemeDetail(selTheme ? (list.find(s => s.theme === selTheme) || themeStats(selTheme)) : null);
+  }
+
+  function renderThemeDetail(s) {
+    const el = $("#themeDetail");
+    if (!s || !s.games.length) { el.innerHTML = ""; return; }
+    store.set("theme", s.theme);
+    const tracked = new Set([...D.themes.map(t => t.toLowerCase()), ...D.autoThemes]).has(s.theme);
+    const w = WINDOWS.find(x => x.h === win)?.label;
+    const games = sortGames(s.games, "gain");
+    const top = games.slice(0, 60);
+    el.innerHTML = `
+      <div class="detail-head"><h2>${esc(s.theme)}</h2>${tracked ? '<span class="chip hot">Searched on Roblox every hour</span>' : `<span class="chip">Only matching names of tracked games. Add "${esc(s.theme)}" to themes.txt for full coverage</span>`}</div>
+      <div class="tiles">
+        <div class="card tile"><div class="k">Released this week</div><div class="v num">${s.n7}</div><div class="s">${s.n30} in the last 30 days</div></div>
+        <div class="card tile"><div class="k">Playing now</div><div class="v num">${full(s.total)}</div><div class="s">across ${s.games.length} games</div></div>
+        <div class="card tile"><div class="k">Growth · ${w}</div><div class="v">${s.pct == null ? '<span class="flat">—</span>' : pctHtml({ pct: s.pct })}</div><div class="s">total players, same games</div></div>
+        <div class="card tile"><div class="k">In games under 14 days old</div><div class="v num">${full(s.newccu)}</div><div class="s">${s.total ? Math.round((s.newccu / s.total) * 100) : 0}% of the theme's players</div></div>
+      </div>
+      <div class="charts">
+        <div class="card chart-card"><h4>Total players · last 7 days</h4><div id="tchart"></div></div>
+        <div class="card chart-card"><h4>Games released per day · last 30 days</h4><div id="tbars"></div></div>
+      </div>
+      <div class="section-title">Games in this theme, most players gained</div>
+      <div class="card tablewrap"><table>${tableHead.replace('id="gh">Growth', `>Growth · ${w}`)}<tbody>${gameRows(top)}</tbody></table></div>
+      ${games.length > top.length ? `<p class="hint">Showing the top ${top.length} of ${games.length}. Search "${esc(s.theme)}" on the Rising games tab to see all.</p>` : ""}`;
+    lineChart($("#tchart"), s.series);
+    releaseBars($("#tbars"), s.games);
+  }
+  $("#themeGrid").addEventListener("click", e => {
+    const c = e.target.closest("[data-theme]"); if (!c) return;
+    selTheme = c.dataset.theme;
+    document.querySelectorAll(".theme").forEach(x => x.classList.toggle("on", x === c));
+    renderThemeDetail(themeStats(selTheme));
+  });
+  let tTimer;
+  $("#tq").addEventListener("input", () => { clearTimeout(tTimer); tTimer = setTimeout(() => { selTheme = null; renderThemes(); }, 150); });
+  $("#tsort").addEventListener("input", renderThemes);
+
+  // ---------- Genres ----------
+  let glevel = "g1";
+  function renderGenres() {
+    const groups = new Map();
+    for (const g of D.games) {
+      const k = g[glevel]; if (!k) continue;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(g);
+    }
+    const rows = [...groups.entries()].map(([k, games]) => {
+      let now = 0, then = 0, total = 0, n7 = 0, n30 = 0;
+      for (const g of games) {
+        total += g.now || 0;
+        const gr = growth(g, win); if (gr) { now += g.now; then += gr.then; }
+        if (g.age != null && g.age <= 7) n7++;
+        if (g.age != null && g.age <= 30) n30++;
+      }
+      const series = new Array(H + 1).fill(null).map((_, i) => { let s = 0, any = false; for (const g of games) if (g.f[i] != null) { s += g.f[i]; any = true; } return any ? s : null; });
+      const top = games.reduce((a, b) => ((b.now || 0) > (a.now || 0) ? b : a));
+      return { k, games, total, n7, n30, pct: then > 0 && usable(win) ? (now - then) / then : null, series, top };
+    }).sort((a, b) => b.total - a.total);
+    const w = WINDOWS.find(x => x.h === win)?.label;
+    $("#genreTable").innerHTML = `<thead><tr><th>${glevel === "g1" ? "Genre" : "Subgenre"}</th><th class="r">Games</th><th class="r">New · 7d</th><th class="r">New · 30d</th><th class="r">Players now · 7d</th><th class="r">Growth · ${w}</th><th>Biggest game</th></tr></thead><tbody>${rows.map(r => `
+      <tr data-genre="${esc(r.k)}"><td><b>${esc(r.k)}</b></td><td class="r num">${r.games.length}</td><td class="r num">${r.n7}</td><td class="r num">${r.n30}</td>
+      <td class="r"><div class="ccu"><span>${spark(r.series)}</span><span class="num" style="min-width:52px"><b>${fmt(r.total)}</b></span></div></td>
+      <td class="r">${r.pct == null ? '<span class="flat">—</span>' : pctHtml({ pct: r.pct })}</td>
+      <td><div class="game" style="min-width:0">${icon(r.top)}<span class="gname" style="max-width:240px">${esc(r.top.n)}</span></div></td></tr>`).join("")}</tbody>`;
+  }
+  $("#glevel").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    glevel = b.dataset.v;
+    $("#glevel").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    renderGenres();
+  });
+  $("#genreTable").addEventListener("click", e => {
+    const r = e.target.closest("[data-genre]"); if (!r) return;
+    const name = r.dataset.genre;
+    if (glevel === "g1") { $("#genre").value = name; $("#q").value = ""; }
+    else { $("#genre").value = ""; $("#q").value = ""; }
+    $("#age").value = "0";
+    showTab("games");
+    if (glevel === "g2") { // filter by subgenre through search of the list
+      const list = sortGames(D.games.filter(g => g.g2 === name), "gain");
+      $("#gtable").innerHTML = tableHead + `<tbody>${gameRows(list.slice(0, 200))}</tbody>`;
+      $("#gcount").textContent = `${list.length} games in ${name}`;
+      $("#gmore").hidden = true;
+    } else renderGames();
+  });
+
+  // ---------- Drawer ----------
+  function openGame(id) {
+    const g = D.games.find(x => x.id === id); if (!g) return;
+    const cells = WINDOWS.map(w => { const gr = growth(g, w.h); return `<div class="card tile"><div class="k">Growth · ${w.label}</div><div class="v" style="font-size:18px">${pctHtml(gr)}</div><div class="s">${gr ? (gr.gain >= 0 ? "+" : "−") + full(Math.abs(gr.gain)) + " players" : usable(w.h) ? "no data" : "needs more history"}</div></div>`; }).join("");
+    const ranks = Object.entries(g.r).sort((a, b) => a[1] - b[1]).map(([k, v]) => `${esc(SORT_NAMES[k] || k)} #${v}`).join(", ");
+    $("#drawer").innerHTML = `<button class="close" aria-label="Close">×</button>
+      <div class="dh">${icon(g)}<div><h2>${esc(g.n)}</h2><div class="muted">${esc(g.c || "")}</div></div></div>
+      <div class="actions"><a class="play" href="${playUrl(g)}">▶ Play on Roblox</a><a class="ghost" href="${pageUrl(g)}" target="_blank" rel="noopener noreferrer">Open game page ↗</a></div>
+      <div class="tiles" style="grid-template-columns:repeat(2,1fr)">
+        <div class="card tile"><div class="k">Players now</div><div class="v num">${full(g.now)}</div></div>
+        <div class="card tile"><div class="k">Visits</div><div class="v num">${fmt(g.v)}</div><div class="s">${g.vpd != null ? "+" + full(Math.max(0, g.vpd)) + " per day" : "rate after a few hours of data"}</div></div>
+      </div>
+      <div class="card chart-card"><h4>Players · last 7 days</h4><div id="dchart"></div></div>
+      <div class="tiles" style="grid-template-columns:repeat(4,1fr)">${cells}</div>
+      <dl class="facts">
+        <dt>Released</dt><dd>${g.cr ? esc(g.cr) + " · " + ago(g.age) : "—"} <span class="muted">(date the game was created on Roblox)</span></dd>
+        <dt>Genre</dt><dd>${esc(g.g1 || "—")}${g.g2 ? " › " + esc(g.g2) : ""}</dd>
+        <dt>On charts</dt><dd>${ranks || '<span class="muted">Not on a chart right now</span>'}</dd>
+        <dt>Themes</dt><dd>${g.th.length ? g.th.map(t => `<span class="chip">${esc(t)}</span>`).join(" ") : "—"}</dd>
+        <dt>Tracked since</dt><dd>${esc(g.fs || "—")}</dd>
+      </dl>`;
+    $("#drawer").classList.add("open"); $("#scrim").classList.add("open");
+    requestAnimationFrame(() => lineChart($("#dchart"), g.a, { height: 200 }));
+  }
+  const closeDrawer = () => { $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); };
+  $("#scrim").addEventListener("click", closeDrawer);
+  $("#drawer").addEventListener("click", e => { if (e.target.closest(".close")) closeDrawer(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+  document.addEventListener("click", e => {
+    if (e.target.closest("a")) return;
+    const tr = e.target.closest("tr[data-id]");
+    if (tr) openGame(+tr.dataset.id);
+  });
+
+  // ---------- Tabs ----------
+  let tab = store.get("tab", "games");
+  function showTab(t) {
+    tab = t; store.set("tab", t);
+    document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+    ["games", "themes", "genres"].forEach(x => $("#tab-" + x).hidden = x !== t);
+    renderAll();
+  }
+  function renderAll() {
+    if (tab === "games") renderGames();
+    else if (tab === "themes") renderThemes();
+    else renderGenres();
+  }
+  $("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => tab === "themes" && renderThemes(), 200); });
+
+  renderWindows();
+  showTab(tab);
+}
+
+// ---------- Loading: plain local data, or the password-locked hosted copy ----------
+(async () => {
+  const gate = document.getElementById("gate");
+  const unlock = data => { document.body.classList.remove("locked"); gate.hidden = true; startApp(data); };
+  const noData = msg => { document.body.classList.remove("locked"); gate.hidden = true; document.querySelector("main").innerHTML = `<div class="empty">${msg}</div>`; };
+
+  // Never run inside another site's frame, where the password box could be dressed up as something else.
+  // (GitHub Pages can't send the header that forbids framing, so the page checks by itself.)
+  if (window.top !== window.self) { document.body.textContent = "Open Trend Radar in its own tab."; return; }
+
+  // The hosted copy carries a Content-Security-Policy (added by build.py --site) and has no local data file.
+  const hosted = !!document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+
+  // 1) Opened from disk by "Open Dashboard.bat": data/dashboard.js sits next to the page.
+  const local = hosted ? null : await new Promise(res => {
+    const s = document.createElement("script");
+    s.src = "data/dashboard.js";
+    s.onload = () => res(window.TT || null);
+    s.onerror = () => res(null);
+    document.head.appendChild(s);
+  });
+  if (local) return unlock(local);
+
+  // 2) Hosted site: the data is encrypted and needs the password.
+  let enc;
+  try { enc = await (await fetch("data.enc", { cache: "no-cache" })).json(); }
+  catch { return noData('No data yet. Run <b>Open Dashboard.bat</b>, or <code>python scripts/build.py</code>.'); }
+
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  // The key can only decrypt and can't be read back out of the browser (not extractable).
+  async function deriveKey(password) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(enc.salt), iterations: enc.rounds, hash: "SHA-256" },
+      base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  }
+  async function decrypt(key) {
+    const zipped = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(enc.iv) }, key, b64(enc.data));
+    const text = await new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    return JSON.parse(text);
+  }
+
+  // "Remember on this device" keeps that locked key in the browser's database. The password itself is never saved.
+  const idb = (mode, fn) => new Promise((res, rej) => {
+    const open = indexedDB.open("trend-radar", 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("keys");
+    open.onerror = () => rej(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      try {
+        const tx = db.transaction("keys", mode), rq = fn(tx.objectStore("keys"));
+        tx.oncomplete = () => { db.close(); res(rq.result); };
+        tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); };
+      } catch (e) { db.close(); rej(e); }
+    };
+  });
+  const savedKey = {
+    get: () => idb("readonly", s => s.get("site")).catch(() => null),
+    set: key => idb("readwrite", s => s.put(key, "site")).catch(() => {}),
+    clear: () => idb("readwrite", s => s.delete("site")).catch(() => {}),
+  };
+
+  // Earlier versions saved the password as plain text. Remove it, and keep that device remembered with a locked key.
+  let oldPassword = null;
+  try { oldPassword = localStorage.getItem("tt:pw"); localStorage.removeItem("tt:pw"); } catch {}
+
+  let key = await savedKey.get();
+  if (!key && oldPassword) { try { key = await deriveKey(oldPassword); } catch {} }
+  oldPassword = null;
+  if (key) {
+    try {
+      const data = await decrypt(key);
+      await savedKey.set(key);
+      return unlock(data);
+    } catch { await savedKey.clear(); }
+  }
+  const form = document.getElementById("gateForm"), input = document.getElementById("pw"), err = document.getElementById("gateErr"), btn = form.querySelector("button");
+  gate.hidden = false;
+  input.focus();
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    btn.disabled = true; btn.textContent = "Unlocking…"; err.textContent = "";
+    try {
+      const key = await deriveKey(input.value);
+      const data = await decrypt(key);
+      if (document.getElementById("remember").checked) await savedKey.set(key); else await savedKey.clear();
+      input.value = "";
+      unlock(data);
+    } catch {
+      err.textContent = "Wrong password.";
+      btn.disabled = false; btn.textContent = "Unlock"; input.select();
+    }
+  });
+})();
+</script>
+</body>
+</html>
